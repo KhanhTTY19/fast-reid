@@ -9,12 +9,8 @@ pyyaml
 yacs
 termcolor
 tabulate
-tensorboard
+tensorboard==2.12
+protobuf==3.20.3
 opencv-python
-pyyaml
-yacs
-termcolor
-scikit-learn
-tabulate
 gdown
-faiss-gpu
+faiss-cpu
