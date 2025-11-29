@@ -324,7 +324,7 @@ class AMPTrainer(SimpleTrainer):
         if grad_scaler is None:
             from torch.cuda.amp import GradScaler
 
-            grad_scaler = GradScaler()
+            grad_scaler = GradScaler('cuda')
         self.grad_scaler = grad_scaler
 
     def run_step(self):
@@ -339,7 +339,7 @@ class AMPTrainer(SimpleTrainer):
         data = next(self._data_loader_iter)
         data_time = time.perf_counter() - start
 
-        with autocast():
+        with autocast('cuda'):
             loss_dict = self.model(data)
             losses = sum(loss_dict.values())
 
