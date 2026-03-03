@@ -31,7 +31,7 @@ __all__ = [
     "build_reid_test_loader"
 ]
 
-_root = os.getenv("FASTREID_DATASETS", "datasets")
+_root = os.getenv("FASTREID_DATASETS", "../Market-1501-v15.09.15")
 
 
 def _train_loader_from_config(cfg, *, train_set=None, transforms=None, sampler=None, **kwargs):

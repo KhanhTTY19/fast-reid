@@ -145,58 +145,76 @@ class BackgroundGenerator(threading.Thread):
         return self
 
 
+# class DataLoaderX(DataLoader):
+#     def __init__(self, local_rank, **kwargs):
+#         super().__init__(**kwargs)
+#         self.stream = torch.cuda.Stream(
+#             local_rank
+#         )  # create a new cuda stream in each process
+#         self.local_rank = local_rank
+
+#     def __iter__(self):
+#         self.iter = super().__iter__()
+#         self.iter = BackgroundGenerator(self.iter, self.local_rank)
+#         self.preload()
+#         return self
+
+#     def _shutdown_background_thread(self):
+#         if not self.iter.is_alive():
+#             # avoid re-entrance or ill-conditioned thread state
+#             return
+
+#         # Set exit event to True for background threading stopping
+#         self.iter.exit_event.set()
+
+#         # Exhaust all remaining elements, so that the queue becomes empty,
+#         # and the thread should quit
+#         for _ in self.iter:
+#             pass
+
+#         # Waiting for background thread to quit
+#         self.iter.join()
+
+#     def preload(self):
+#         self.batch = next(self.iter, None)
+#         if self.batch is None:
+#             return None
+#         with torch.cuda.stream(self.stream):
+#             for k in self.batch:
+#                 if isinstance(self.batch[k], torch.Tensor):
+#                     self.batch[k] = self.batch[k].to(
+#                         device=self.local_rank, non_blocking=True
+#                     )
+
+#     def __next__(self):
+#         torch.cuda.current_stream().wait_stream(
+#             self.stream
+#         )  # wait tensor to put on GPU
+#         batch = self.batch
+#         if batch is None:
+#             raise StopIteration
+#         self.preload()
+#         return batch
+
+#     # Signal for shutting down background thread
+#     def shutdown(self):
+#         # If the dataloader is to be freed, shutdown its BackgroundGenerator
+#         self._shutdown_background_thread()
 class DataLoaderX(DataLoader):
     def __init__(self, local_rank, **kwargs):
         super().__init__(**kwargs)
-        self.stream = torch.cuda.Stream(
-            local_rank
-        )  # create a new cuda stream in each process
-        self.local_rank = local_rank
+        self.local_rank = 'cpu'  # force CPU
 
     def __iter__(self):
         self.iter = super().__iter__()
-        self.iter = BackgroundGenerator(self.iter, self.local_rank)
-        self.preload()
         return self
 
-    def _shutdown_background_thread(self):
-        if not self.iter.is_alive():
-            # avoid re-entrance or ill-conditioned thread state
-            return
-
-        # Set exit event to True for background threading stopping
-        self.iter.exit_event.set()
-
-        # Exhaust all remaining elements, so that the queue becomes empty,
-        # and the thread should quit
-        for _ in self.iter:
-            pass
-
-        # Waiting for background thread to quit
-        self.iter.join()
-
     def preload(self):
-        self.batch = next(self.iter, None)
-        if self.batch is None:
-            return None
-        with torch.cuda.stream(self.stream):
-            for k in self.batch:
-                if isinstance(self.batch[k], torch.Tensor):
-                    self.batch[k] = self.batch[k].to(
-                        device=self.local_rank, non_blocking=True
-                    )
+        return None  # no-op for CPU
 
     def __next__(self):
-        torch.cuda.current_stream().wait_stream(
-            self.stream
-        )  # wait tensor to put on GPU
-        batch = self.batch
-        if batch is None:
-            raise StopIteration
-        self.preload()
+        batch = next(self.iter)
         return batch
 
-    # Signal for shutting down background thread
     def shutdown(self):
-        # If the dataloader is to be freed, shutdown its BackgroundGenerator
-        self._shutdown_background_thread()
+        pass
